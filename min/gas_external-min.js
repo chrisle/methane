@@ -13,8 +13,8 @@
 // @codekit-append "services/spreadsheet/cell.js"
 // @codekit-append "services/spreadsheet/range.js"
 // @codekit-append "services/spreadsheet/sheet.js"
-// "services/spreadsheet/spreadsheet.js"
-// "services/spreadsheet/spreadsheet_app.js"
+// @codekit-append "services/spreadsheet/spreadsheet.js"
+// @codekit-append "services/spreadsheet/spreadsheet_app.js"
 
 /**
  * UrlFetch services
@@ -695,5 +695,129 @@ var XmlElement = (function() {
     getName: function() { return 0; },
     getText: function() {return this.text(); },
     toXmlString: function() { return 0; }
+  };
+})();
+
+
+/*********************************************** 
+     Begin spreadsheet.js 
+***********************************************/ 
+
+/**
+ * Spreadsheet
+ */
+var Spreadsheet = (function() { // TODO incomplete
+
+  var DEFAULT_PREFIX = 'Sheet',
+      sheets_ = [],
+      sheetCount_ = 0,
+      activeSpreadsheet_;
+  
+  function constructor() {
+    activeSpreadsheet_ = makeSheet();
+  }
+
+  function makeSheet(optName) {
+    sheetCount_++;    
+    var sheetName = (optName === undefined) ? 
+                    DEFAULT_PREFIX + sheetCount_ : 
+                    sheetName = optName;
+    sheets_[sheetName] = Sheet;
+    return sheetName;
+  }
+
+  function dump() {
+    console.log(sheets_);
+  }
+
+  constructor();
+  return {
+    
+    sheets_: sheets_,
+
+    getActiveRange: function() {},
+    addCollaborator: function() {},
+    addCollaborator: function() {},
+    addCollaborators: function() {},
+    addViewer: function() {},
+    addViewer: function() {},
+    addMenu: function() {},
+    removeMenu: function() {},
+    deleteActiveSheet: function() {},
+    duplicateActiveSheet: function() {},
+    getActiveSheet: function() {},
+    getCollaborators: function() {},
+    getColumnWidth: function() {},
+    getFormUrl: function() {},
+    getId: function() {},
+    getName: function() {},
+    getNumSheets: function() {},
+    getOwner: function() {},
+    getRangeByName: function() {},
+    getRowHeight: function() {},
+
+    getSheetByName: function(name) {
+      return sheets_[name];
+    },
+
+    getSheets: function() {},
+    getSpreadsheetLocale: function() {},
+    getSpreadsheetTimeZone: function() {},
+    getUrl: function() {},
+    getViewers: function() {},
+
+    insertSheet: function(optName, optSheetIndex, optAdvancedArgs) {
+      makeSheet(optName);
+    },
+
+    isAnonymousView: function() {},
+    isAnonymousWrite: function() {},
+    isReadable: function() {},
+    isWritable: function() {},
+    moveActiveSheet: function() {},
+    removeCollaborator: function() {},
+    removeCollaborator: function() {},
+    removeViewer: function() {},
+    removeViewer: function() {},
+    rename: function() {},
+    renameActiveSheet: function() {},
+
+    setActiveSheet: function(sheet) {
+      activeSpreadsheet_ = sheet;
+    },
+
+    setAnonymousAccess: function() {},
+    setColumnWidth: function() {},
+    setName: function() {},
+    setNamedRange: function() {},
+    removeNamedRange: function() {},
+    setRowHeight: function() {},
+    setSpreadsheetLocale: function() {},
+    setSpreadsheetTimeZone: function() {},
+    show: function() {},
+    toast: function() {}
+
+
+
+  };
+})();
+
+
+/*********************************************** 
+     Begin spreadsheet_app.js 
+***********************************************/ 
+
+var SpreadsheetApp = (function() {
+
+  return {
+    getActiveRange: function() { return Range; },
+    create: function() { return Spreadsheet; },
+    flush: function() {},
+    getActiveSheet: function() { return Sheet; },
+    getActiveSpreadsheet: function() { return Spreadsheet; },
+    openById: function(id) { return Spreadsheet; },
+    setActiveRange: function(range) { return Range; },
+    setActiveSheet: function(sheet) { return Sheet; },
+    setActiveSpreadsheet: function(spreadsheet) { return Spreadsheet; }
   };
 })();

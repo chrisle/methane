@@ -161,12 +161,31 @@ test('Range', function() {
   equal(r.getValues()[2][1], '', 'values into array');
 });
 
-// test('Sheet', function() {
-//   var s = new Sheet(ws);
-//   var r = s.getRange(1, 1, 2, 2);
-//   equal(r.getValue(), 'san fran', 'initializing with cells');
-// });
+//-----------------------------------------------------------------------------
 
+test('Spreadsheet', function() {
+  Spreadsheet.insertSheet('Settings');
+  var s = Spreadsheet.getSheetByName('Settings');
+  console.log(s);
+});
+
+//-----------------------------------------------------------------------------
+
+test('SpreadsheetApp', function() {
+
+  // var thisDoc = SpreadsheetApp.getActiveSpreadsheet();
+  // var settingsSheet = thisDoc.getSheetByName(SETTINGS_SHEET);  
+  // if (settingsSheet == null) {
+  //   thisDoc.insertSheet(SETTINGS_SHEET);
+  // }    
+  // for (var i = 0; i < settings.length; i++) {
+  //   var setting = settings[i][0];
+  //   if (settings[i][0] == settingName) return settings[i][1];
+  // }
+  // return false;
+
+  var doc = SpreadsheetApp.getActiveSpreadsheet();
+});
 
 
 

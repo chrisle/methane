@@ -13,8 +13,8 @@
 // @codekit-append "services/spreadsheet/cell.js"
 // @codekit-append "services/spreadsheet/range.js"
 // @codekit-append "services/spreadsheet/sheet.js"
-// "services/spreadsheet/spreadsheet.js"
-// "services/spreadsheet/spreadsheet_app.js"
+// @codekit-append "services/spreadsheet/spreadsheet.js"
+// @codekit-append "services/spreadsheet/spreadsheet_app.js"
 
 /**
  * UrlFetch services

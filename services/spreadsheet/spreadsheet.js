@@ -8,50 +8,91 @@ var Spreadsheet = (function() { // TODO incomplete
       sheetCount_ = 0,
       activeSpreadsheet_;
   
-  function constructor() {}
+  function constructor() {
     activeSpreadsheet_ = makeSheet();
   }
 
-  function setActiveSheet (sheet) {
-    activeSpreadsheet_ = sheet;
-  }
-
-  /**
-   * Creates a new spreadsheet
-   */
   function makeSheet(optName) {
     sheetCount_++;    
     var sheetName = (optName === undefined) ? 
                     DEFAULT_PREFIX + sheetCount_ : 
                     sheetName = optName;
-    sheets_[sheetName] = Worksheet;
+    sheets_[sheetName] = Sheet;
     return sheetName;
+  }
+
+  function dump() {
+    console.log(sheets_);
   }
 
   constructor();
   return {
     
+    sheets_: sheets_,
+
+    getActiveRange: function() {},
+    addCollaborator: function() {},
+    addCollaborator: function() {},
+    addCollaborators: function() {},
+    addViewer: function() {},
+    addViewer: function() {},
+    addMenu: function() {},
+    removeMenu: function() {},
+    deleteActiveSheet: function() {},
+    duplicateActiveSheet: function() {},
+    getActiveSheet: function() {},
+    getCollaborators: function() {},
+    getColumnWidth: function() {},
+    getFormUrl: function() {},
+    getId: function() {},
+    getName: function() {},
+    getNumSheets: function() {},
+    getOwner: function() {},
+    getRangeByName: function() {},
+    getRowHeight: function() {},
+
+    getSheetByName: function(name) {
+      return sheets_[name];
+    },
+
+    getSheets: function() {},
+    getSpreadsheetLocale: function() {},
+    getSpreadsheetTimeZone: function() {},
+    getUrl: function() {},
+    getViewers: function() {},
+
+    insertSheet: function(optName, optSheetIndex, optAdvancedArgs) {
+      makeSheet(optName);
+    },
+
+    isAnonymousView: function() {},
+    isAnonymousWrite: function() {},
+    isReadable: function() {},
+    isWritable: function() {},
+    moveActiveSheet: function() {},
+    removeCollaborator: function() {},
+    removeCollaborator: function() {},
+    removeViewer: function() {},
+    removeViewer: function() {},
+    rename: function() {},
+    renameActiveSheet: function() {},
+
     setActiveSheet: function(sheet) {
       activeSpreadsheet_ = sheet;
     },
 
-    getActiveSheet: function() { 
-      return sheets_[activeSpreadsheet_];
-    },
+    setAnonymousAccess: function() {},
+    setColumnWidth: function() {},
+    setName: function() {},
+    setNamedRange: function() {},
+    removeNamedRange: function() {},
+    setRowHeight: function() {},
+    setSpreadsheetLocale: function() {},
+    setSpreadsheetTimeZone: function() {},
+    show: function() {},
+    toast: function() {}
 
-    getSheetByName: function(name) { 
-      return sheets_[name];
-    },
 
-    getRange: function(range) { 
-      return Sheet(activeSpreadsheet_).getRange(range); 
-    },
-
-    create: function(optName) {
-      return makeSheet(optName);
-    },
-
-    sheets_: sheets_
 
   };
 })();

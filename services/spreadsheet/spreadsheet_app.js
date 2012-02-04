@@ -1,9 +1,5 @@
 var SpreadsheetApp = (function() {
 
-  var sheetCount_ = 1;
-      activeSheet_,
-      activeRange_;
-
   return {
     getActiveRange: function() { return Range; },
     create: function() { return Spreadsheet; },

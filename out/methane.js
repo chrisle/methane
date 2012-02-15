@@ -1,59 +1,125 @@
 
-/**
- * Base services
- */
-// @codekit-append "services/base/logger.js"
-// @codekit-append "services/base/browser.js"
-// @codekit-append "services/base/buttons.js"
-
-/**
- * Spreadsheet services
- */
-// @codekit-append "services/spreadsheet/base26.js"
-// @codekit-append "services/spreadsheet/cell.js"
-// @codekit-append "services/spreadsheet/range.js"
-// @codekit-append "services/spreadsheet/sheet.js"
-// @codekit-append "services/spreadsheet/spreadsheet.js"
-// @codekit-append "services/spreadsheet/spreadsheet_app.js"
-
-/**
- * UrlFetch services
- */
-// @codekit-append "services/url_fetch/http_response.js"
-// @codekit-append "services/url_fetch/o_auth_config.js"
-// @codekit-append "services/url_fetch/url_fetch_app.js"
-
-/**
- * Utilities services
- */
-// @codekit-append "services/utilities/mac_algorithm.js"
-// @codekit-append "services/utilities/utilities.js"
-
-/**
- * XML services
- */
-// @codekit-append "services/xml/xml.js"
-// @codekit-append "services/xml/xml_element.js"
-
-
-/*********************************************** 
-     Begin logger.js 
-***********************************************/ 
-
-
 var Logger = (function() {
   var log_ = [];
+  
   return {
-    getLog: function() { return log_.join('\n'); },
-    log: function(message) { log_.push(message); }
+    getLog: function() { 
+      return log_.join('\n'); 
+    },
+
+    log: function(message) { 
+      log_.push(message); 
+    }
+
   };
 })();
 
 
-/*********************************************** 
-     Begin cell.js 
-***********************************************/ 
 
+
+
+var Browser = (function() {
+  return {
+    Buttons: function() { return Buttons; },
+    inputBox: function(title, prompt, buttons) { return 0; },
+    msgBox: function(title, prompt, buttons) { return 0; }
+  };
+})();
+var Buttons = (function() {
+  return {
+    OK: function() { return 0; },
+    OK_CANCEL: function() { return 1; },
+    YES_NO: function() { return 2; },
+    YES_NO_CANCEL: function() { return 3; }
+  };
+})();
+/**
+ * Base 26
+ * where A = 1
+ */
+
+// Number.prototype.toBase26 = function() {
+//   return Base26.toBase26(this);
+// }
+
+// String.prototype.toRC = function() {
+//   return Base26.toRC(this);
+// }
+
+var Base26 = (function() {
+
+  return {
+
+    /**
+     * Converts an integer into base 26
+     */
+    toBase26: function(input) {
+      input = (+input-1).toString(26);
+      var ret = [];
+      while (input.length) {
+        var a = input.charCodeAt(input.length-1);
+        if (input.length > 1) {
+          input = (parseInt(input.substr(0, input.length - 1), 26) - 1).toString(26);
+        } else {
+          input = "";
+        }
+        if (a >= 48/*'0'*/ && a <= 57 /*'9'*/) {
+          ret.unshift(String.fromCharCode(a + 49)); //raise to += 'a'
+        } else {
+          ret.unshift(String.fromCharCode(a + 10)); //raise + 10 (make room for 0-9)
+        }
+      }
+      return ret.join('').toUpperCase();
+    },
+
+    /**
+     * Convert base 26 to an integer
+     */
+    toInt: function(l) {
+      var ret = 0;
+      l = l.toUpperCase();
+      if (l.length > 1) {
+        ret = l[0].charCodeAt() - 65 + 26;
+        ret = ret + l[1].charCodeAt() - 65;
+      } else {
+        ret = l.charCodeAt() - 65;
+      }
+      ret++; // Columns start at 1.
+      return ret;
+    },
+
+    /**
+     * Returns A1 => 1, 1
+     */
+    toRC: function(base) {
+      var baseMatch = base.match(/([A-Z])(\d+)/);
+      if (baseMatch == null) { 
+        // only a letter
+        return { r: false, c: this.toInt(base) };  
+      } else {
+        // letter and a number
+        var col = baseMatch[1];
+        var row = parseInt(baseMatch[2]);
+        return { r: row, c: this.toInt(col) };
+      }
+    },
+
+    /**
+     * Returns start and end r/c
+     */
+    range: function(range) {
+      var baseMatch = range.match(/([A-Z]\d?)(:)([A-Z]\d?)/);
+      var start = baseMatch[1];
+      var end = baseMatch[3];
+      return {
+        'start' : Base26.toRC(start),
+        'end'   : Base26.toRC(end)
+      }
+    }
+
+  }
+
+})();
 /**
  * Class Cell
  */
@@ -97,12 +163,6 @@ function Cell(properties) {
   };
 
 }
-
-
-/*********************************************** 
-     Begin range.js 
-***********************************************/ 
-
 
 function Range(cells) {
 
@@ -244,19 +304,15 @@ function Range(cells) {
 
   };
 };
-
-
-/*********************************************** 
-     Begin sheet.js 
-***********************************************/ 
-
 /**
  * Class Worksheet
  */
 function Sheet(name) {
 
   var cells_ = [],
-      name_;
+      name_,
+      lastCol_ = 0,
+      lastRow_ = 0;
 
   function init(name) {
     setName(name);
@@ -271,7 +327,7 @@ function Sheet(name) {
    * Returns the index of a row, column pair
    */
   function indexOf(r, c) {
-    return c.toBase26() + r.toString();
+    return Base26.toBase26(c) + r.toString();
   }
 
   /**
@@ -283,6 +339,8 @@ function Sheet(name) {
   function setValue(r, c, properties) {
     var cell = new Cell(properties);
     cells_[indexOf(r, c)] = cell;
+    if (r > lastRow_) { lastRow_ = r; }
+    if (c > lastCol_) { lastCol_ = c; }
   }
 
   /**
@@ -424,9 +482,13 @@ function Sheet(name) {
       if (arguments.length === 0) { throw 'getRange received no arguments'; }
         
       if (typeof(arguments[0]) === 'string') {
-        var coord = arguments[0];
-        var row = coord.toRC().r;
-        var col = coord.toRC().c;
+        
+        var rc = Base26.range(arguments[0]);
+        var row = rc.start.r || lastRow_;
+        var col = rc.start.c || lastCol_;
+
+        console.log('rc = ' + row + ', ' + col);
+        
         var optNumRows = arguments[1] || 0;
         var optNumCols = arguments[2] || 0;
 
@@ -482,257 +544,46 @@ function Sheet(name) {
   };
 
 }
-
-
-/*********************************************** 
-     Begin base26.js 
-***********************************************/ 
-
-/**
- * Base 26
- * where A = 1
- */
-
-Number.prototype.toBase26 = function() {
-  return Base26.toBase26(this);
-}
-
-String.prototype.toRC = function() {
-  return Base26.toRC(this);
-}
-
-var Base26 = (function() {
-
-  return {
-    
-    /**
-     * Converts an integer into base 26
-     */
-    toBase26: function(input) {
-      input = (+input-1).toString(26);
-      var ret = [];
-      while (input.length) {
-        var a = input.charCodeAt(input.length-1);
-        if (input.length > 1) {
-          input = (parseInt(input.substr(0, input.length - 1), 26) - 1).toString(26);
-        } else {
-          input = "";
-        }
-        if (a >= 48/*'0'*/ && a <= 57 /*'9'*/) {
-          ret.unshift(String.fromCharCode(a + 49)); //raise to += 'a'
-        } else {
-          ret.unshift(String.fromCharCode(a + 10)); //raise + 10 (make room for 0-9)
-        }
-      }
-      return ret.join('').toUpperCase();
-    },
-
-    /**
-     * Convert base 26 to row
-     */
-    base26ToRow: function(base) {
-      return parseInt(base.match(/\d+/).join(''));
-    },
-
-    /**
-     * Convert base 26 to column
-     */
-    base26ToCol: function(base) {
-      return this.base26ToInt(base.match(/[A-Z]/g).join('').toString()) + 1;
-    },
-
-    /**
-     * Convert base 26 to an integer
-     */
-    base26ToInt: function(l) {
-      var ret = 0;
-      l = l.toUpperCase();
-      if (l.length > 1) {
-        ret = l[0].charCodeAt() - 65 + 26;
-        ret = ret + l[1].charCodeAt() - 65;
-      } else {
-        ret = l.charCodeAt() - 65;
-      }
-      return ret;
-    },
-
-    toRC: function(base) {
-      return { r: this.base26ToRow(base), c: this.base26ToCol(base) };
-    }
-  }
-
-})();
-
-
-/*********************************************** 
-     Begin browser.js 
-***********************************************/ 
-
-
-var Browser = (function() {
-  return {
-    Buttons: function() { return Buttons; },
-    inputBox: function(title, prompt, buttons) { return 0; },
-    msgBox: function(title, prompt, buttons) { return 0; }
-  };
-})();
-
-
-/*********************************************** 
-     Begin buttons.js 
-***********************************************/ 
-
-var Buttons = (function() {
-  return {
-    OK: function() { return 0; },
-    OK_CANCEL: function() { return 1; },
-    YES_NO: function() { return 2; },
-    YES_NO_CANCEL: function() { return 3; }
-  };
-})();
-
-
-/*********************************************** 
-     Begin http_response.js 
-***********************************************/ 
-
-
-var HTTPResponse = (function() {
-  return {
-    getContent: function() { return 0; },        // Byte []
-    getContentText: function() { return 0; },
-    getHeaders: function() { return 0; },        // Key/value map of HTTP headers
-    getResponseCode: function() { return 0; }    // int
-  };
-})();
-
-
-/*********************************************** 
-     Begin o_auth_config.js 
-***********************************************/ 
-
-
-var OAuthConfig = (function() {
-  return {
-    setAccessTokenUrl: function() { return ''; },
-    setAuthorizationUrl: function() { return ''; },
-    setAuthorizationUrl: function() { return ''; },
-    setConsumerSecret: function() { return ''; }
-  };
-})();
-
-
-/*********************************************** 
-     Begin url_fetch_app.js 
-***********************************************/ 
-
-
-var UrlFetchApp = (function() {
-  return {
-    // TODO addOAuthService
-    fetch: function(url, optAdvancedArgs) { return HTTPResponse; }
-  };
-})();
-
-/*********************************************** 
-     Begin mac_algorithm.js 
-***********************************************/ 
-
-var MacAlgorithm = (function() {
-  return {
-    HMAC_MD5: function() { return 0; },
-    HMAC_SHA_1: function() { return 0; },
-    HMAC_SHA_256: function() { return 0; },
-    HMAC_SHA_384: function() { return 0; },
-    HMAC_SHA_512: function() { return 0; }
-  };
-})();
-
-/*********************************************** 
-     Begin utilities.js 
-***********************************************/ 
-
-var Utilities = (function() {
-  return {
-    base64Decode: function(data) {},
-    base64Encode: function(data) {},
-    computeDigest: function(digestAlgorithm, value) {},
-    computeHmacSignature: function(macAlgorithm, value, key) {},
-    computeHmacSha256Signature: function(value, key) {},
-    formatDate: function(date, timeZone, format) {},
-    jsonParse: function(jsonString) { return jQuery.parseJSON(jsonString); },
-    jsonStringify: function(object) { return JSON.stringify(object); },
-    newBlob: function(data, contentType, name) {},
-    sleep: function(milliseconds) {},
-    MacAlgorithm: function() { return MacAlgorithm; }
-  };
-})();
-
-/*********************************************** 
-     Begin xml.js 
-***********************************************/ 
-
-
-var Xml = (function() {
-  return {
-    parse: function(xmlContent, optLenient) { return jQuery.parseXML(xmlContent); },
-    parseJS: function(shortHand) {}
-  };
-})();
-
-
-
-/*********************************************** 
-     Begin xml_element.js 
-***********************************************/ 
-
-var XmlElement = (function() {
-  return {
-    getAttribute: function(attributeName) { return 0; },
-    getDocument: function() { return Xml(xmlContent); },
-    getElement: function(elementName) { return XmlElement(xmlObj.find(elementName).first()); },
-    getElements: function(elementName) { return XmlElement(xmlObj.find(elementName)); },
-    getName: function() { return 0; },
-    getText: function() {return this.text(); },
-    toXmlString: function() { return 0; }
-  };
-})();
-
-
-/*********************************************** 
-     Begin spreadsheet.js 
-***********************************************/ 
-
 /**
  * Spreadsheet
  */
-var Spreadsheet = (function() { // TODO incomplete
+function Spreadsheet() { // TODO incomplete
 
   var DEFAULT_PREFIX = 'Sheet',
       sheets_ = [],
       sheetCount_ = 0,
-      activeSpreadsheet_;
+      activeSheet_;
   
-  function constructor() {
-    activeSpreadsheet_ = makeSheet();
+  function init() {
+    activeSheet_ = makeNewSheet_();
   }
 
-  function makeSheet(optName) {
+  function makeNewSheet_(optName) {
     sheetCount_++;    
     var sheetName = (optName === undefined) ? 
                     DEFAULT_PREFIX + sheetCount_ : 
                     sheetName = optName;
-    sheets_[sheetName] = Sheet;
+    sheets_[sheetName] = new Sheet(sheetName);
     return sheetName;
   }
 
-  function dump() {
+  function dump_() {
     console.log(sheets_);
   }
 
-  constructor();
+  function dumpSheetNames_() {
+    var temp = [];
+    for (sheet in sheets_) { temp.push(sheet); } 
+    console.log(temp);
+  }
+
+  init();
+
+  //--------------------------------------------------------------------------
+  
   return {
-    
+    dump: dump_,
+    dumpSheetNames: dumpSheetNames_,
     sheets_: sheets_,
 
     getActiveRange: function() {},
@@ -745,7 +596,11 @@ var Spreadsheet = (function() { // TODO incomplete
     removeMenu: function() {},
     deleteActiveSheet: function() {},
     duplicateActiveSheet: function() {},
-    getActiveSheet: function() {},
+
+    getActiveSheet: function() {
+      return sheets_[activeSheet_];
+    },
+
     getCollaborators: function() {},
     getColumnWidth: function() {},
     getFormUrl: function() {},
@@ -757,6 +612,9 @@ var Spreadsheet = (function() { // TODO incomplete
     getRowHeight: function() {},
 
     getSheetByName: function(name) {
+      if (sheets_[name] === undefined) { 
+        throw 'Sheet '+name+' does not exist.';
+      }
       return sheets_[name];
     },
 
@@ -767,7 +625,7 @@ var Spreadsheet = (function() { // TODO incomplete
     getViewers: function() {},
 
     insertSheet: function(optName, optSheetIndex, optAdvancedArgs) {
-      makeSheet(optName);
+      makeNewSheet_(optName);
     },
 
     isAnonymousView: function() {},
@@ -783,7 +641,8 @@ var Spreadsheet = (function() { // TODO incomplete
     renameActiveSheet: function() {},
 
     setActiveSheet: function(sheet) {
-      activeSpreadsheet_ = sheet;
+      // todo if sheet ! in sheets_ throw error
+      activeSheet_ = sheet;
     },
 
     setAnonymousAccess: function() {},
@@ -797,27 +656,101 @@ var Spreadsheet = (function() { // TODO incomplete
     show: function() {},
     toast: function() {}
 
-
-
   };
-})();
-
-
-/*********************************************** 
-     Begin spreadsheet_app.js 
-***********************************************/ 
-
+}
 var SpreadsheetApp = (function() {
+
+  var activeSpreadsheet_ = new Spreadsheet();
 
   return {
     getActiveRange: function() { return Range; },
     create: function() { return Spreadsheet; },
     flush: function() {},
-    getActiveSheet: function() { return Sheet; },
-    getActiveSpreadsheet: function() { return Spreadsheet; },
-    openById: function(id) { return Spreadsheet; },
-    setActiveRange: function(range) { return Range; },
-    setActiveSheet: function(sheet) { return Sheet; },
-    setActiveSpreadsheet: function(spreadsheet) { return Spreadsheet; }
+
+    getActiveSheet: function() { 
+      return activeSpreadsheet_.getActiveSheet(); 
+    },
+
+    getActiveSpreadsheet: function() { 
+      return activeSpreadsheet_;
+    },
+    
+    openById: function(id) { return 0; },
+
+    setActiveRange: function(range) {return Range; },
+
+    setActiveSheet: function(sheet) {
+      return activeSpreadsheet_.setActiveSheet(sheet); 
+    },
+
+    setActiveSpreadsheet: function(spreadsheet) { 
+      return Spreadsheet; 
+    }
+
+  };
+})();
+
+var HTTPResponse = (function() {
+  return {
+    getContent: function() { return 0; },        // Byte []
+    getContentText: function() { return 0; },
+    getHeaders: function() { return 0; },        // Key/value map of HTTP headers
+    getResponseCode: function() { return 0; }    // int
+  };
+})();
+
+var OAuthConfig = (function() {
+  return {
+    setAccessTokenUrl: function() { return ''; },
+    setAuthorizationUrl: function() { return ''; },
+    setAuthorizationUrl: function() { return ''; },
+    setConsumerSecret: function() { return ''; }
+  };
+})();
+
+var UrlFetchApp = (function() {
+  return {
+    // TODO addOAuthService
+    fetch: function(url, optAdvancedArgs) { return HTTPResponse; }
+  };
+})();var MacAlgorithm = (function() {
+  return {
+    HMAC_MD5: function() { return 0; },
+    HMAC_SHA_1: function() { return 0; },
+    HMAC_SHA_256: function() { return 0; },
+    HMAC_SHA_384: function() { return 0; },
+    HMAC_SHA_512: function() { return 0; }
+  };
+})();var Utilities = (function() {
+  return {
+    base64Decode: function(data) {},
+    base64Encode: function(data) {},
+    computeDigest: function(digestAlgorithm, value) {},
+    computeHmacSignature: function(macAlgorithm, value, key) {},
+    computeHmacSha256Signature: function(value, key) {},
+    formatDate: function(date, timeZone, format) {},
+    jsonParse: function(jsonString) { return jQuery.parseJSON(jsonString); },
+    jsonStringify: function(object) { return JSON.stringify(object); },
+    newBlob: function(data, contentType, name) {},
+    sleep: function(milliseconds) {},
+    MacAlgorithm: function() { return MacAlgorithm; }
+  };
+})();
+var Xml = (function() {
+  return {
+    parse: function(xmlContent, optLenient) { return jQuery.parseXML(xmlContent); },
+    parseJS: function(shortHand) {}
+  };
+})();
+
+var XmlElement = (function() {
+  return {
+    getAttribute: function(attributeName) { return 0; },
+    getDocument: function() { return Xml(xmlContent); },
+    getElement: function(elementName) { return XmlElement(xmlObj.find(elementName).first()); },
+    getElements: function(elementName) { return XmlElement(xmlObj.find(elementName)); },
+    getName: function() { return 0; },
+    getText: function() {return this.text(); },
+    toXmlString: function() { return 0; }
   };
 })();
